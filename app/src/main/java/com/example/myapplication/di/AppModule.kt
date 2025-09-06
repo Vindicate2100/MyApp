@@ -2,10 +2,10 @@ package com.example.myapplication.di
 
 import android.content.Context
 import androidx.room.Room
-import com.example.myapplication.data.dao.ClimateDao
-import com.example.myapplication.data.dao.TaskDao
-import com.example.myapplication.data.dao.VerificationDao
-import com.example.myapplication.data.database.AppDatabase
+import com.example.myapplication.data.local.dao.ClimateDao
+import com.example.myapplication.data.local.dao.TaskDao
+import com.example.myapplication.data.local.dao.VerificationDao
+import com.example.myapplication.data.local.database.AppDatabase
 import com.example.myapplication.data.repository.VerificationRepository
 import com.example.myapplication.data.repository.VerificationRepositoryImpl
 import dagger.Module
@@ -27,7 +27,7 @@ object AppModule {
             AppDatabase::class.java,
             "app-database.db"
         )
-            .fallbackToDestructiveMigration(false)
+            .fallbackToDestructiveMigration(true)
             .build()
     }
 

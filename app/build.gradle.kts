@@ -1,20 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
-    //kotlin("kapt") // Аннотационная обработка Kotlin
-    id("com.google.devtools.ksp") version "2.1.20-2.0.0" // Закомментировано для быстрого переключения
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "com.example.myapplication"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.myapplication"
         minSdk = 34
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -22,79 +21,85 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
+    // ✅ Новый стиль вместо kotlinOptions
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources {
+            pickFirsts += "META-INF/NOTICE.md"
+            pickFirsts += "META-INF/LICENSE.md"  // Рекомендуется
+            pickFirsts += "META-INF/LICENSE.txt" // Рекомендуется
+        }
+    }
 }
 
 dependencies {
     // ========== Core Dependencies ==========
-    implementation(libs.androidx.core.ktx) // Kotlin extensions
-    implementation(libs.androidx.appcompat) // AppCompat
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
     implementation(libs.material)
 
     // ========== Jetpack Compose ==========
-    implementation(platform(libs.androidx.compose.bom)) // BOM для версий Compose
-    implementation(libs.ui) // UI компоненты
-    implementation(libs.material3) // Material Design 3
-    implementation(libs.androidx.material.icons.extended) // Иконки
-    implementation(libs.androidx.activity.compose) // Activity integration
-    implementation(libs.androidx.ui.tooling.preview) // Preview поддержка
-    debugImplementation(libs.androidx.ui.tooling) // Инструменты разработчика
-    debugImplementation(libs.androidx.ui.test.manifest) // Манифест для тестов
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.ui)
+    implementation(libs.material3)
+    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.ui.tooling.preview)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 
     // ========== Navigation ==========
-    implementation(libs.androidx.navigation.compose) // Навигация в Compose
-    implementation(libs.androidx.hilt.navigation.compose) // Hilt навигация
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // ========== Lifecycle & ViewModel ==========
-    implementation(libs.androidx.lifecycle.viewmodel.ktx) // ViewModel
-    implementation(libs.androidx.lifecycle.runtime.ktx) // Lifecycle
-    implementation(libs.lifecycle.viewmodel.compose) // ViewModel для Compose
-    implementation(libs.androidx.lifecycle.runtime.compose) // Lifecycle для Compose
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // ========== Dependency Injection ==========
-    implementation(libs.hilt.android) // Hilt core
-    //kapt(libs.hilt.android.compiler) // Обработка аннотаций Hilt
-    ksp(libs.hilt.android.compiler) // Альтернатива kapt (закомментировано)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
 
     // ========== Database ==========
-    implementation(libs.androidx.room.runtime) // Room runtime
-    implementation(libs.room.ktx) // Room Coroutines support
-    //kapt(libs.androidx.room.compiler) // Room annotation processor
-    ksp(libs.androidx.room.compiler) // Альтернатива kapt (закомментировано)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // ========== Coroutines ==========
-    implementation(libs.kotlinx.coroutines.android) // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
 
-    // ========== Testing ==========
-    testImplementation(libs.junit) // Unit tests
-    androidTestImplementation(libs.androidx.junit) // Android JUnit
-    androidTestImplementation(libs.androidx.espresso.core) // Espresso
-    androidTestImplementation(platform(libs.androidx.compose.bom)) // Compose BOM для тестов
-    androidTestImplementation(libs.androidx.ui.test.junit4) // Compose UI тесты
+    // ========== WorkManager ==========
+    implementation(libs.androidx.work.runtime.ktx.v290)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
-    implementation (libs.androidx.animation)
-    implementation (libs.androidx.foundation)
+    // PDF libraries
+    implementation(libs.itext7.core)
+
+    implementation(libs.precompose)
+    implementation(libs.androidx.core.splashscreen)
 }
-
-//kapt {
-   // correctErrorTypes = true // Исправление типов для Hilt
-//}

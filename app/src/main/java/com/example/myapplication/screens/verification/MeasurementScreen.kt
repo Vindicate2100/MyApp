@@ -1,9 +1,8 @@
 package com.example.myapplication.screens.verification
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,20 +10,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.DeviceUnknown
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
@@ -40,15 +42,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.myapplication.viewmodels.VerificationViewModel
-import kotlin.math.abs
+import com.example.myapplication.ui.components.tables.MeasurementTable
+import com.example.myapplication.viewmodels.verification.VerificationViewModel
 
 @Composable
 fun MeasurementScreen(
@@ -135,9 +136,9 @@ private fun MeasurementContent(
                 }
             )
 
-            MeasurementResultsTable(
-                group = measurementGroups[activeGroupIndex],
-                transformFunction = transformFunction
+            MeasurementTable(
+                viewModel = viewModel,
+                group = measurementGroups[activeGroupIndex]
             )
 
             Row(
@@ -154,13 +155,10 @@ private fun MeasurementContent(
                     Text("Назад")
                 }
                 Button(
-                    onClick = {
-                        viewModel.saveVerification()
-                        onNext()
-                    },
+                    onClick = onNext,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Сохранить")
+                    Text("Далее")
                 }
             }
         }
@@ -177,28 +175,80 @@ private fun InstrumentInfoCard(viewModel: VerificationViewModel) {
     val transformFunction by viewModel.transformFunction.collectAsState()
 
     Card(
-        elevation = CardDefaults.cardElevation(4.dp),
+        elevation = CardDefaults.cardElevation(6.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Протокол №$protocolNumber",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Text(
-                text = "поверки $deviceType $deviceModel №$deviceNumber",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Text(
-                text = "Класс точности: $accuracyClass" +
-                        if (transformFunction != VerificationViewModel.TRANSFORM_NONE)
-                            " | Функция: $transformFunction" else "",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Протокол
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Assessment,
+                    contentDescription = "Протокол",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = " №$protocolNumber",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            // Устройство
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeviceUnknown,
+                    contentDescription = "Устройство",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = " $deviceType $deviceModel №$deviceNumber",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            // Класс точности + функция преобразования
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.StarRate,
+                    contentDescription = "Класс точности",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(20.dp)
+                )
+                if (transformFunction != VerificationViewModel.TRANSFORM_NONE) {
+                    Text(
+                        text = " $accuracyClass | $transformFunction",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                } else {
+                    Text(
+                        text = " $accuracyClass",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -243,27 +293,38 @@ private fun MeasurementInputCard(
                         )
                     }
 
-                    if (expandedMeasurementId == measurement.id) {
+                    AnimatedVisibility(visible = expandedMeasurementId == measurement.id) {
                         Column(
-                            modifier = Modifier.padding(vertical = 8.dp),
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .animateContentSize(),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            // Показываем подсказку: что нужно сделать
+                            Text(
+                                text = "Приложите ${"%.1f".format(measurement.scaleMark)} В:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+
                             MeasurementTextField(
                                 label = "↑ Возрастание (В)",
-                                value = measurement.referenceIncreasing,
+                                value = measurement.referenceIncreasing.takeIf { it != 0f },
                                 onValueChange = { newValue ->
                                     val updated = measurement.copy(
-                                        referenceIncreasing = newValue
+                                        referenceIncreasing = newValue ?: 0f
                                     )
                                     onMeasurementUpdate(index, updated)
                                 }
                             )
+
                             MeasurementTextField(
                                 label = "↓ Убывание (В)",
-                                value = measurement.referenceDecreasing,
+                                value = measurement.referenceDecreasing.takeIf { it != 0f },
                                 onValueChange = { newValue ->
                                     val updated = measurement.copy(
-                                        referenceDecreasing = newValue
+                                        referenceDecreasing = newValue ?: 0f
                                     )
                                     onMeasurementUpdate(index, updated)
                                 }
@@ -277,143 +338,39 @@ private fun MeasurementInputCard(
 }
 
 @Composable
-private fun MeasurementResultsTable(
-    group: VerificationViewModel.MeasurementGroup,
-    transformFunction: String
-) {
-    val showTransformColumns = transformFunction != VerificationViewModel.TRANSFORM_NONE
-    val scrollState = rememberScrollState()
-
-    Card(
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(
-            modifier = Modifier.horizontalScroll(scrollState)
-        ) {
-            // Заголовок таблицы
-            Row(
-                modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                // Общие колонки
-                TableHeaderCell("Точка (В)")
-                TableHeaderCell("Эталон ↑")
-                TableHeaderCell("Эталон ↓")
-
-                // Динамические колонки преобразований
-                if (showTransformColumns) {
-                    val unit = when (transformFunction) {
-                        VerificationViewModel.TRANSFORM_75MV -> "mV"
-                        else -> "A"
-                    }
-                    TableHeaderCell("Преобр. ↑ ($unit)")
-                    TableHeaderCell("Преобр. ↓ ($unit)")
-                }
-
-                // Колонки погрешностей
-                TableHeaderCell("Погр. ↑ (%)")
-                TableHeaderCell("Погр. ↓ (%)")
-                TableHeaderCell("Вариация")
-            }
-
-            // Тело таблицы
-            group.measurements.forEach { measurement ->
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // Точка измерения (не изменяется)
-                    DataCellWithBorder(
-                        text = "%.1f".format(measurement.scaleMark),
-                        color = if (measurement.scaleMark == group.measurements.first().scaleMark ||
-                            measurement.scaleMark == group.measurements.last().scaleMark) {
-                            MaterialTheme.colorScheme.primary
-                        } else Color.Unspecified
-                    )
-
-                    // Оригинальные эталонные значения (в Вольтах)
-                    DataCellWithBorder("%.2f В".format(measurement.referenceIncreasing))
-                    DataCellWithBorder("%.2f В".format(measurement.referenceDecreasing))
-
-                    // Преобразованные значения (если функция активна)
-                    if (showTransformColumns) {
-                        DataCellWithBorder("%.2f".format(measurement.transformedValueInc))
-                        DataCellWithBorder("%.2f".format(measurement.transformedValueDec))
-                    }
-
-                    // Погрешности (уже рассчитаны с учетом преобразований)
-                    DataCellWithBorder(
-                        text = "%.2f%%".format(measurement.errorIncreasing),
-                        color = if (abs(measurement.errorIncreasing) > group.maxAllowedError)
-                            Color.Red else Color.Unspecified
-                    )
-                    DataCellWithBorder(
-                        text = "%.2f%%".format(measurement.errorDecreasing),
-                        color = if (abs(measurement.errorDecreasing) > group.maxAllowedError)
-                            Color.Red else Color.Unspecified
-                    )
-                    DataCellWithBorder("%.2f".format(measurement.variation))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DataCellWithBorder(
-    text: String,
-    color: Color = Color.Unspecified
-) {
-    Box(
-        modifier = Modifier
-            .border(1.dp, MaterialTheme.colorScheme.outline)
-            .widthIn(80.dp)
-            .padding(horizontal = 8.dp, vertical = 12.dp)
-    ) {
-        Text(
-            text = text,
-            color = color,
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Composable
 private fun MeasurementTextField(
     label: String,
-    value: Float,
-    onValueChange: (Float) -> Unit
+    value: Float?,
+    onValueChange: (Float?) -> Unit
 ) {
-    var textValue by remember { mutableStateOf(value.toString()) }
+    var textValue by remember(value) {
+        mutableStateOf(value?.toString() ?: "")
+    }
 
     OutlinedTextField(
         value = textValue,
         onValueChange = {
-            if (it.isEmpty() || it.matches(Regex("^-?\\d*\\.?\\d*$"))) {
+            if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) {
                 textValue = it
-                it.toFloatOrNull()?.let(onValueChange)
+                val floatValue = it.toFloatOrNull()
+                onValueChange(floatValue)
             }
         },
         label = { Text(label) },
+        placeholder = { Text("Введите значение") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
-        isError = textValue.isNotEmpty() && textValue.toFloatOrNull() == null
+        isError = textValue.isNotEmpty() && textValue.toFloatOrNull() == null,
+        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center)
     )
-}
 
-@Composable
-private fun TableHeaderCell(text: String) {
-    Box(
-        modifier = Modifier
-            .width(80.dp)
-            .padding(horizontal = 8.dp, vertical = 12.dp)
-    ) {
+    if (textValue.isNotEmpty() && textValue.toFloatOrNull() == null) {
         Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            text = "Неверное значение",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
         )
     }
 }
